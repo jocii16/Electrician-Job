@@ -1,4 +1,7 @@
-ESX = exports["es_extended"]:getSharedObject()
+local Core = exports['cs_lib']:GetLib()
+Citizen.CreateThread(function()
+    while not Core.FrameworkIsReady() do Wait(1000); end
+end)
 
 local jobs = {}
 
@@ -28,8 +31,8 @@ for k, v in ipairs(Config.Station) do
         radius = 1.5,
         debug = false,
         inside = function()
-            if IsControlJustPressed(38, 38) and not showJobs and ESX.Game.IsSpawnPointClear(v.spawnPoint, 6.0) then
-                ESX.Game.SpawnVehicle(v.carModel, v.spawnPoint, v.heading)
+            if IsControlJustPressed(38, 38) and not showJobs then
+                Core.SpawnCar(v.carModel, v.spawnPoint, v.heading)
                 showJobs = true
                 works()
                 local alert = lib.alertDialog({
@@ -38,13 +41,6 @@ for k, v in ipairs(Config.Station) do
                     centered = true,
                     cancel = false,
                 })
-            -- else
-            --     lib.notify({
-            --         title = 'Technician Job',
-            --         description = 'Something is blocking the spawnpoint!',
-            --         type = 'error',
-            --         position = 'center-right'
-            --     })
             end
         end,
         onEnter = function()
@@ -83,7 +79,7 @@ for k, v in ipairs(Config.Station) do
             if cache.vehicle then
                 if IsControlJustPressed(38, 38) and showJobs then
                     local vehicle = GetVehiclePedIsIn(cache.ped, false)
-                    ESX.Game.DeleteVehicle(vehicle)
+                    Core.DeleteCar(vehicle)
                     showJobs = false
                     for k, v in ipairs(jobs) do
                         RemoveBlip(v)
@@ -107,7 +103,7 @@ for k, v in ipairs(Config.Station) do
 
     -- PED --
 
-    lib.RequestModel(v.model)
+    Core.loadModel(v.model)
     ped = CreatePed(1, v.model, v.pedcoords, false, false)
     FreezeEntityPosition(ped, true)
     SetEntityInvincible(ped, true)
@@ -133,37 +129,14 @@ function works()
                         local success = lib.skillCheck(Config.skillDifficulty, { 'w', 'a', 's', 'd' })
                         if success then
                             lib.callback('jocy-technician:reward')
-                            lib.notify({
-                                title = 'Technician',
-                                description = 'You have successfully fixed the problem!',
-                                type = 'success',
-                                position = 'center-right'
-                            })
+                            Core.Notification('You have successfully fixed the problem!', 'success')
                             ClearPedTasks(cache.ped)
-                            lib.notify({
-                                title = 'Tired, wait a while!',
-                                type = 'warning',
-                                position = 'top'
-                            })
+                            Core.Notification('Tired, wait a while!', 'success')
                             Citizen.Wait(Config.Cooldown)
-                            lib.notify({
-                                title = 'Technician',
-                                description = 'You can continue working!',
-                                type = 'success',
-                                position = 'center-right'
-                            })
+                            Core.Notification('You can continue working!', 'success')
                         else
-                            lib.notify({
-                                title = 'Technician',
-                                description = 'Fail',
-                                type = 'error',
-                                position = 'center-right'
-                            })
-                            lib.notify({
-                                title = 'Tired, wait a while!',
-                                type = 'warning',
-                                position = 'top'
-                            })
+                            Core.Notification('Fail', 'success')
+                            Core.Notification('Tired, wait a while!', 'success')
                             ClearPedTasks(cache.ped)
                             Citizen.Wait(Config.Cooldown)
                         end
@@ -194,10 +167,8 @@ function works()
     end
 end
 
-RegisterNetEvent('esx:playerLoaded')
-AddEventHandler('esx:playerLoaded', function(playerData)
+AddEventHandler('playerSpawned', function()
     works()
-
 end)
 
 AddEventHandler('onResourceStart', function(resourceName)
