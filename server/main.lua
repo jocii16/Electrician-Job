@@ -1,8 +1,7 @@
-ESX = exports["es_extended"]:getSharedObject()
+local Core = exports['cs_lib']:GetLib()
 
-lib.callback.register('jocy-technician:reward', function ()
-    local ped = ESX.GetPlayerFromId(source)
+Core.RegisterCallback('jocy-technician:reward', function()
+    local ped = Core.GetId(source)
     local reward = math.random(Config.RewardMin, Config.RewardMax)
-
-    exports.ox_inventory:AddItem(ped.source, 'money', reward)
+    Core.GiveItem(source, 'money', reward)
 end)
